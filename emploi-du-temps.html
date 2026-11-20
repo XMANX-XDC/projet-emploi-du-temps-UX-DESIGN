@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Emploi du temps</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background: #f8f5f0;
+      color: #171717;
+    }
+    .top, .calendar {
+      background: white;
+      border: 1px solid #eadfd2;
+      border-radius: 14px;
+    }
+    .top {
+      padding: 24px;
+    }
+    .calendar {
+      overflow: hidden;
+    }
+    .scroll {
+      overflow-x: auto;
+    }
+    .week {
+      min-width: 950px;
+    }
+    .head-cell, .day-cell {
+      border-left: 1px solid #eee5dc;
+    }
+    .head-cell {
+      height: 56px;
+      padding-top: 8px;
+      text-align: center;
+    }
+    .day-cell {
+      position: relative;
+      height: 1152px;
+      min-width: 0;
+      padding: 5px;
+      background-image: repeating-linear-gradient(
+        to bottom,
+        transparent 0,
+        transparent 94px,
+        #eee5dc 95px,
+        transparent 96px
+      );
+    }
+    .hours {
+      width: 48px;
+      flex: 0 0 48px;
+      color: #78685e;
+      font-size: 12px;
+      padding-top: 0;
+    }
+    .hour {
+      height: 96px;
+      text-align: right;
+      padding-right: 5px;
+    }
+    .lesson {
+      position: absolute;
+      top: 0;
+      left: 5px;
+      right: 5px;
+      height: 384px;
+      padding: 10px;
+      border: 2px solid #efcda9;
+      border-radius: 10px;
+      background: #fff8ef;
+      font-size: 13px;
+      line-height: 1.25;
+      overflow-wrap: anywhere;
+    }
+    .day-cell > .lesson:nth-child(2) {
+      top: 672px;
+      margin-top: 0 !important;
+    }
+    .other {
+      background: #f7f1e5;
+      border-color: #e7d9b9;
+    }
+    .kind {
+      color: #a85600;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .details {
+      color: #6c737d;
+    }
+    .today {
+      background-color: #fff8ef;
+    }
+    .toolbar .btn {
+      min-height: 44px;
+      border-color: #eadfd2;
+      color: #663f27;
+    }
+    .toolbar button {
+      cursor: pointer;
+    }
+    .date-pick {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+      pointer-events: none;
+    }
+    @media (max-width: 767px) {
+      .scroll {
+        overflow: visible;
+      }
+      .week {
+        min-width: 0;
+      }
+      .week > .d-flex:first-child {
+        display: none !important;
+      }
+      .week > .d-flex:nth-child(2) {
+        display: block !important;
+      }
+      .hours {
+        display: none;
+      }
+      .week > .d-flex:nth-child(2) > .row {
+        display: block;
+      }
+      .day-cell {
+        height: auto;
+        min-height: 120px;
+        padding: 12px;
+        border-left: 0;
+        border-bottom: 1px solid #eee5dc;
+        background: white;
+      }
+      .day-cell::before {
+        display: block;
+        margin-bottom: 10px;
+        font-weight: 700;
+        color: #663f27;
+      }
+      .day-cell::before { content: var(--label); }
+      .day-cell > .lesson {
+        position: relative;
+        inset: auto;
+        height: auto;
+        min-height: 120px;
+        margin-top: 10px !important;
+      }
+      .day-cell > .lesson:nth-child(2) {
+        top: auto;
+      }
+    }
+    @media (max-width: 575px) {
+      .top {
+        padding: 18px;
+      }
+      .toolbar .btn {
+        min-height: 40px;
+        padding: 6px 10px;
+      }
+    }
+    @media print {
+      body { background: white; }
+      .toolbar { display: none !important; }
+      .top, .calendar { border-color: #ddd; }
+      .scroll { overflow: visible; }
+      .week { min-width: 950px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="container-fluid px-3 px-md-5 py-4">
+    <header class="top mb-4">
+      <div class="d-flex flex-wrap justify-content-between gap-3">
+        <div>
+          <h1 class="h3 fw-bold mb-1">Emploi du temps</h1>
+          <p class="text-secondary mb-0">Semaine du 16 – 21 novembre 2026</p>
+        </div>
+        <div class="toolbar d-flex gap-2 align-items-start">
+          <button class="btn bg-white" id="pick-date" aria-label="Choisir une date">▦</button>
+          <input class="date-pick" id="date-input" type="date" value="2026-11-16" aria-label="Choisir une date">
+          <button class="btn bg-white" id="previous" aria-label="Semaine précédente">‹</button>
+          <button class="btn bg-white text-secondary" id="today">Aujourd'hui</button>
+          <button class="btn bg-white" id="next" aria-label="Semaine suivante">›</button>
+          <button class="btn btn-warning bg-opacity-10" id="pdf">PDF</button>
+        </div>
+      </div>
+      <hr>
+      <div class="d-flex gap-2">
+        <span class="badge rounded-pill text-bg-warning bg-opacity-25 text-dark">COURS</span>
+        <span class="badge rounded-pill text-bg-secondary bg-opacity-10 text-dark">AUTRE</span>
+        <span class="badge rounded-pill text-bg-danger bg-opacity-10 text-danger">ÉVALUATION</span>
+      </div>
+    </header>
+
+    <div class="calendar scroll">
+      <div class="week">
+        <div class="d-flex">
+          <div class="hours"></div>
+          <div class="row g-0 flex-grow-1">
+            <div class="col head-cell fw-semibold">LUNDI<small class="d-block fw-normal"></small></div>
+            <div class="col head-cell fw-semibold">MARDI<small class="d-block fw-normal"></small></div>
+            <div class="col head-cell fw-semibold">MERCREDI<small class="d-block fw-normal"></small></div>
+            <div class="col head-cell fw-semibold">JEUDI<small class="d-block fw-normal"></small></div>
+            <div class="col head-cell fw-semibold today">VENDREDI<small class="d-block fw-normal"></small></div>
+            <div class="col head-cell fw-semibold">SAMEDI<small class="d-block fw-normal"></small></div>
+          </div>
+        </div>
+        <div class="d-flex">
+          <div class="hours">
+            <div class="hour">08:00</div>
+            <div class="hour">09:00</div>
+            <div class="hour">10:00</div>
+            <div class="hour">11:00</div>
+            <div class="hour">12:00</div>
+            <div class="hour">13:00</div>
+            <div class="hour">14:00</div>
+            <div class="hour">15:00</div>
+            <div class="hour">16:00</div>
+            <div class="hour">17:00</div>
+            <div class="hour">18:00</div>
+            <div class="hour">19:00</div>
+          </div>
+          <div class="row g-0 flex-grow-1">
+            <div class="col day-cell">
+              <article class="lesson">
+                <div class="d-flex justify-content-between"><span class="kind">COURS</span><span>08:00 – 12:00</span></div>
+                <strong>Techniques de communication en Anglais 1</strong>
+                <div class="details">♙ Amadou Gallo FALL<br>⌖ Salle B203</div>
+              </article>
+              <article class="lesson mt-5">
+                <div class="d-flex justify-content-between"><span class="kind">COURS</span><span>15:00 – 19:00</span></div>
+                <strong>ACSI 2 (UML & Design Patterns)</strong>
+                <div class="details">♙ Abdoulaye GUISSE<br>⌖ Salle B203</div>
+              </article>
+            </div>
+            <div class="col day-cell">
+              <article class="lesson">
+                <div class="d-flex justify-content-between"><span class="kind">COURS</span><span>08:00 – 12:00</span></div>
+                <strong>Recherche opérationnelle</strong>
+                <div class="details">♙ Ahmed Mouhamadou WADE<br>⌖ Salle B203</div>
+              </article>
+              <article class="lesson mt-5">
+                <div class="d-flex justify-content-between"><span class="kind">COURS</span><span>15:00 – 19:00</span></div>
+                <strong>Techniques de communication en Français</strong>
+                <div class="details">♙ Ousmane SANOKHO<br>⌖ Salle B203</div>
+              </article>
+            </div>
+            <div class="col day-cell">
+              <article class="lesson">
+                <div class="d-flex justify-content-between"><span class="kind">COURS</span><span>08:00 – 12:00</span></div>
+                <strong>Fondamentaux BD (Bases+Programmation SQL, Admin, Sécurité)</strong>
+                <div class="details">♙ Abdoul Aziz CISS<br>⌖ Salle B203</div>
+              </article>
+              <article class="lesson other mt-5">
+                <div class="d-flex justify-content-between"><span class="kind">AUTRE</span><span>15:00 – 19:00</span></div>
+                <strong>TPE</strong>
+              </article>
+            </div>
+            <div class="col day-cell">
+              <article class="lesson other">
+                <div class="d-flex justify-content-between"><span class="kind">AUTRE</span><span>08:00 – 12:00</span></div>
+                <strong>TPE (séance en salle)</strong>
+              </article>
+              <article class="lesson other mt-5">
+                <div class="d-flex justify-content-between"><span class="kind">AUTRE</span><span>15:00 – 19:00</span></div>
+                <strong>TPE (séance en salle)</strong>
+              </article>
+            </div>
+            <div class="col day-cell today">
+              <article class="lesson">
+                <div class="d-flex justify-content-between"><span class="kind">COURS</span><span>08:00 – 12:00</span></div>
+                <strong>Traitement du Signal</strong>
+                <div class="details">♙ Ndeye Fatou NGOM<br>⌖ Salle B203</div>
+              </article>
+              <article class="lesson mt-5">
+                <div class="d-flex justify-content-between"><span class="kind">COURS</span><span>15:00 – 19:00</span></div>
+                <strong>UX Design (+intégration)</strong>
+                <div class="details">♙ Samba SIDIBE<br>⌖ Salle B203</div>
+              </article>
+            </div>
+            <div class="col day-cell">
+              <article class="lesson">
+                <div class="d-flex justify-content-between"><span class="kind">COURS</span><span>08:00 – 12:00</span></div>
+                <strong>PPP 1</strong>
+                <div class="details">♙ Oumar NIANG<br>⌖ Salle B203</div>
+              </article>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+  <script>
+    let start = new Date(2026, 10, 16);
+    const input = document.getElementById('date-input');
+    const names = ['LUNDI', 'MARDI', 'MERCREDI', 'JEUDI', 'VENDREDI', 'SAMEDI'];
+    const format = date => date.toLocaleDateString('fr-FR', {
+      day: 'numeric', month: 'short'
+    }).replace('.', '');
+
+    function showWeek(date) {
+      const monday = new Date(date);
+      monday.setDate(monday.getDate() - (monday.getDay() + 6) % 7);
+      start = new Date(monday);
+      const saturday = new Date(monday);
+      saturday.setDate(monday.getDate() + 5);
+      document.querySelector('header p').textContent =
+        `Semaine du ${format(monday)} – ${format(saturday)} ${saturday.getFullYear()}`;
+      document.querySelectorAll('.head-cell small').forEach((label, i) => {
+        const day = new Date(monday);
+        day.setDate(monday.getDate() + i);
+        label.textContent = format(day);
+      });
+      document.querySelectorAll('.day-cell').forEach((cell, i) => {
+        const day = new Date(monday);
+        day.setDate(monday.getDate() + i);
+        cell.style.setProperty('--label', `"${names[i]} · ${format(day)}"`);
+        cell.classList.toggle('today', day.toDateString() === new Date().toDateString());
+      });
+      document.querySelectorAll('.head-cell').forEach((cell, i) => {
+        const day = new Date(monday);
+        day.setDate(monday.getDate() + i);
+        cell.classList.toggle('today', day.toDateString() === new Date().toDateString());
+      });
+      input.value = monday.toISOString().slice(0, 10);
+    }
+
+    document.getElementById('previous').onclick = () => {
+      start.setDate(start.getDate() - 7);
+      showWeek(start);
+    };
+    document.getElementById('next').onclick = () => {
+      start.setDate(start.getDate() + 7);
+      showWeek(start);
+    };
+    document.getElementById('today').onclick = () => showWeek(new Date());
+    document.getElementById('pick-date').onclick = () => {
+      if (input.showPicker) input.showPicker();
+      else input.click();
+    };
+    input.onchange = () => showWeek(new Date(`${input.value}T12:00:00`));
+    document.getElementById('pdf').onclick = () => window.print();
+    showWeek(start);
+  </script>
+</body>
+</html>
